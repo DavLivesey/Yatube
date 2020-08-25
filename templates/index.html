@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Последние обновления на сайте{% endblock %}
+{% block header %}<strong class="d-block text-gray-dark text-center">Последние обновления на сайте</strong>{% endblock %}
+{% block content %}
+{% load cache %}    
+    {% if user.is_authenticated %}    
+    {% else %}
+    <strong class="d-block text-gray-dark text-center"><span style="color:red">Чтобы просматривать публикации, зарегистрируйтесь или войдите в аккаунт</strong></strong>
+    {% endif %}    
+    <div class="container">
+    {% include "menu.html" %}
+    {% cache 20 index_page %}
+    {% for post in page %}
+    {% include "post_item.html" with post=post %}
+    {% endfor %}
+    </div>
+    {% if page.has_other_pages %}
+        {% include "paginator.html" with items=page paginator=paginator %}
+    {% endif %}
+    {% endcache %}
+{% endblock %}
