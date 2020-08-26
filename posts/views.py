@@ -115,6 +115,7 @@ def post_edit(request, username, post_id):
         edit = True
         return render(request, 'new.html', {'form': form, 'post': post, 'edit': edit})
 
+
 @login_required
 def add_comment(request, username, post_id):
     form = CommentForm(request.POST or None)
@@ -128,6 +129,7 @@ def add_comment(request, username, post_id):
     post = get_object_or_404(Post, pk=post_id)
     items = post.comments.all()
     return render(request, 'post.html', {'form':form, 'items': items, 'post': post})
+
 
 @login_required
 def follow_index(request):
@@ -144,6 +146,7 @@ def follow_index(request):
         {"page": page, 'paginator': paginator, 'follow': follow}
         )
 
+
 @login_required
 def profile_follow(request, username):
     author = get_object_or_404(User, username=username)
@@ -151,10 +154,10 @@ def profile_follow(request, username):
         Follow.objects.get_or_create(user=request.user, author=author)
     return redirect('profile', username=username)
 
+
 @login_required
 def profile_unfollow(request, username):
     author = get_object_or_404(User, username=username)
     if author.username != request.user.username:
-        unfollow = Follow.objects.get(user=request.user, author=author)
-        unfollow.delete()
+        Follow.objects.get(user=request.user, author=author).delete()
     return redirect('profile', username=username)

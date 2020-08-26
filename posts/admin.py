@@ -13,6 +13,7 @@ class PostAdmin(admin.ModelAdmin):
 class GroupAdmin(admin.ModelAdmin):
     list_display = ("title", "slug", "description")
 
+
 class CommentAdmin(admin.ModelAdmin):
     list_display = ('post', 'text', 'author', 'created')
 

@@ -1,8 +1,10 @@
+import tempfile
 from django.core.cache import cache
 from django.test import Client, TestCase
 from django.urls import reverse
+from PIL import Image
 
-from posts.models import Group, Post, User, Follow, Comment
+from posts.models import Group, Post, User, Follow
 
 
 class TestContent(TestCase):
@@ -52,11 +54,13 @@ class TestContent(TestCase):
                                  )
         if base.group == self.group:
             for url in [index_url, profile_url, post_url, group_posts_url]:
-                self.assert_post_to_url(url, base)
+                with self.subTest(url=url):
+                    self.assert_post_to_url(url, base)
         else:
             for url in [index_url, profile_url, post_url]:
-                self.assert_post_to_url(url, base)
-    
+                with self.subTest(url=url):
+                    self.assert_post_to_url(url, base)
+
     def create_author_and_subscribe_user(self):
         author = User.objects.create(
             username='Gvinivera', password='12345', email='GvinLansel@yandex.ru'
@@ -69,7 +73,7 @@ class TestContent(TestCase):
             text='Stand up and fight!',
             author=author,
             group=self.group
-        )        
+        )
 # Next functions are tests
     def test_profile_page_exists_for_registered_user(self):
         resp = self.authorized_client.get(
@@ -157,35 +161,36 @@ class TestContent(TestCase):
         self.assertEqual(response.status_code, 404)
 
     def test_image_can_be_on_page(self):
-        with open('/Users/goguz/Pictures/2020/1.jpg', 'rb') as img:
-            self.authorized_client.post(
-                reverse('new_post'),
-                {
-                    'text': "Кто ходит в гости по утрам, тот поступает мудро",
-                    'author': self.user.username,
-                    'group': self.group.pk,
-                    'image': img
-                },
-                follow=True
-                )
-            base = Post.objects.first()
-            self.vision_on_page(base)
+        img = Image.new('RGB', (60, 30), color='black')
+        img.save('pil_black.png')
+        self.authorized_client.post(
+            reverse('new_post'),
+            {
+                'text': "Кто ходит в гости по утрам, тот поступает мудро",
+                'author': self.user.username,
+                'group': self.group.pk,
+                'image': img
+            },
+            follow=True
+            )
+        base = Post.objects.first()
+        self.vision_on_page(base)
 
     def test_protect_from_not_img_file(self):
         count_posts1 = Post.objects.count()
-        with open('/Users/goguz/Pictures/2020/SD.txt', 'rb') as img:
-            self.authorized_client.post(
-                reverse('new_post'),
-                {
-                    'text': "Кто ходит в гости по утрам, тот поступает мудро",
-                    'author': self.user.username,
-                    'group': self.group.pk,
-                    'image': img
-                },
-                follow=True
-                )
-            count_posts2 = Post.objects.count()
-            self.assertEqual(count_posts1, count_posts2)
+        img = tempfile.TemporaryFile()
+        self.authorized_client.post(
+            reverse('new_post'),
+            {
+                'text': "Кто ходит в гости по утрам, тот поступает мудро",
+                'author': self.user.username,
+                'group': self.group.pk,
+                'image': img
+            },
+            follow=True
+            )
+        count_posts2 = Post.objects.count()
+        self.assertEqual(count_posts1, count_posts2)
 
     def test_cache_index_page(self):
         self.create_post_for_tests()
@@ -209,7 +214,10 @@ class TestContent(TestCase):
         count_2 = Follow.objects.count()
         self.assertNotEqual(count_1, count_2)
         author = User.objects.get(username='Gvinivera')
-        self.authorized_client.get(reverse('profile_unfollow', kwargs={'username': author.username}))
+        self.authorized_client.get(reverse(
+            'profile_unfollow',
+            kwargs={'username': author.username}
+        ))
         count_3 = Follow.objects.count()
         self.assertEqual(count_1, count_3)
 
@@ -220,7 +228,10 @@ class TestContent(TestCase):
         response = self.authorized_client.get(reverse('follow_index'))
         self.assertContains(response, base.text)
         cache.clear()
-        self.authorized_client.get(reverse('profile_unfollow', kwargs={'username': base.author.username}))
+        self.authorized_client.get(reverse(
+            'profile_unfollow',
+            kwargs={'username': base.author.username}
+        ))
         response = self.authorized_client.get(reverse('follow_index'))
         self.assertNotContains(response, base.text)
 
@@ -232,12 +243,15 @@ class TestContent(TestCase):
         )
         self.authorized_client.post(
             reverse(
-                'add_comment',
-                kwargs={
+                    'add_comment',
+                    kwargs={
                     'username': self.user.username,
                     'post_id': post.pk
                 }),
-                {'text':'Это ж-ж-ж-ж неспроста'}
+            {'text':'Это ж-ж-ж-ж неспроста'}
             )
-        response = self.authorized_client.get(reverse('post', kwargs={'username': self.user.username, 'post_id':post.pk}))        
+        response = self.authorized_client.get(reverse(
+            'post',
+        kwargs={'username': self.user.username, 'post_id':post.pk}
+        ))
         self.assertContains(response, 'Это ж-ж-ж-ж неспроста')

@@ -19,21 +19,20 @@ from django.urls import include, path
 from django.conf import settings
 from django.conf.urls import handler404, handler500
 from django.conf.urls.static import static
-
+from posts import views as post_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('auth/', include('users.urls')),
     path('about/', include('django.contrib.flatpages.urls')),
+    path('auth/', include('users.urls')),    
     path('auth/', include('django.contrib.auth.urls')),
-    path('', include("posts.urls"))
-]
-
-urlpatterns += [
     path('about-us/', views.flatpage, {'url':'/about-us/'}, name='about'),
     path('about-author/', views.flatpage, {'url':'/about-author/'}, name='about'),
     path('terms/', views.flatpage, {'url':'/terms/'}, name='terms'),
-    path('about-spec/', views.flatpage, {'url':'/about-spec/'}, name='terms')
+    path('about-spec/', views.flatpage, {'url':'/about-spec/'}, name='terms'),
+    path('', include("posts.urls")),
+    path('404/', post_views.page_not_found, name='404.html'),
+    path('500/', post_views.server_error, name='500.html')
 ]
 
 handler404 = 'posts.views.page_not_found'  # noqa
